@@ -1,0 +1,6 @@
+{
+  "name": "FINORA",
+  "description": "Your Money. Your Control. Complete personal finance management ecosystem featuring multi-account debit card carousels, borrowing & lending, shared roommate expenses, budgets, savings goals, AI assistance, and statements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

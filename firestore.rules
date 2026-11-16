@@ -1,0 +1,619 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==================== GLOBAL HARDENED HELPERS ====================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwnerDoc() {
+      return isEmailVerified() && existing().userId == request.auth.uid;
+    }
+
+    function isValidOccupation(occ) {
+      return occ in [
+        'college_student', 'school_student', 'hostel_student',
+        'working_professional', 'freelancer', 'business_owner',
+        'self_employed', 'other'
+      ];
+    }
+
+    function isValidAccountType(t) {
+      return t in ['savings', 'current', 'salary', 'cash', 'upi', 'other'];
+    }
+
+    // ==================== VALIDATION BLUEPRINTS ====================
+
+    function isValidUser(data, userId) {
+      return data.id is string && data.id == userId &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        isValidOccupation(data.occupation) &&
+        data.currency is string && data.currency.size() >= 3 && data.currency.size() <= 10 &&
+        data.currencySymbol is string && data.currencySymbol.size() >= 1 && data.currencySymbol.size() <= 8 &&
+        data.isOnboarded is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 150000)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 80)) &&
+        (!('preferredLanguage' in data) || (data.preferredLanguage is string && data.preferredLanguage.size() <= 50)) &&
+        (!('themePreference' in data) || data.themePreference in ['dark', 'light', 'system']) &&
+        (!('isHostelResident' in data) || data.isHostelResident is bool) &&
+        (!('monthlyIncomeOrAllowance' in data) || (data.monthlyIncomeOrAllowance is number && data.monthlyIncomeOrAllowance >= 0)) &&
+        (!('incomeFrequency' in data) || data.incomeFrequency in ['monthly', 'weekly', 'irregular']) &&
+        (!('salaryOrAllowanceDate' in data) || (data.salaryOrAllowanceDate is number && data.salaryOrAllowanceDate >= 1 && data.salaryOrAllowanceDate <= 31)) &&
+        (!('defaultPaymentMethod' in data) || (data.defaultPaymentMethod is string && data.defaultPaymentMethod.size() <= 40)) &&
+        (!('dailySpendLimit' in data) || (data.dailySpendLimit is number && data.dailySpendLimit >= 0)) &&
+        (!('lowBalanceThreshold' in data) || (data.lowBalanceThreshold is number && data.lowBalanceThreshold >= 0)) &&
+        (!('enableBudgetAlerts' in data) || data.enableBudgetAlerts is bool) &&
+        (!('enableBillReminders' in data) || data.enableBillReminders is bool) &&
+        (!('enableRoundUpSavings' in data) || data.enableRoundUpSavings is bool) &&
+        (!('hideBalancesOnLaunch' in data) || data.hideBalancesOnLaunch is bool) &&
+        (!('appPin' in data) || (data.appPin is string && data.appPin.size() <= 4));
+    }
+
+    function isValidAccount(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.bankName is string && data.bankName.size() >= 1 && data.bankName.size() <= 80 &&
+        isValidAccountType(data.accountType) &&
+        data.balance is number &&
+        (!('openingBalance' in data) || data.openingBalance is number) &&
+        data.currency is string && data.currency.size() >= 3 && data.currency.size() <= 10 &&
+        data.maskedNumber is string && data.maskedNumber.size() >= 1 && data.maskedNumber.size() <= 30 &&
+        data.colorGradient is string && data.colorGradient.size() >= 1 && data.colorGradient.size() <= 120 &&
+        data.isDefault is bool &&
+        data.isArchived is bool &&
+        (!('bankCode' in data) || (data.bankCode is string && data.bankCode.size() <= 20)) &&
+        (!('isHidden' in data) || data.isHidden is bool) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.accountId is string && isValidId(data.accountId) &&
+        (!('destinationAccountId' in data) || (data.destinationAccountId is string && data.destinationAccountId.size() <= 128)) &&
+        data.type in ['income', 'expense', 'transfer'] &&
+        data.amount is number && data.amount > 0 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 180 &&
+        data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        (!('time' in data) || (data.time is string && data.time.size() <= 24)) &&
+        data.paymentMethod is string && data.paymentMethod.size() >= 1 && data.paymentMethod.size() <= 60 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCategory(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+        data.type in ['expense', 'income'] &&
+        (!('icon' in data) || (data.icon is string && data.icon.size() <= 40)) &&
+        (!('color' in data) || (data.color is string && data.color.size() <= 30)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBudget(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.limitAmount is number && data.limitAmount > 0 &&
+        data.period in ['monthly', 'weekly'] &&
+        data.monthYear is string && data.monthYear.size() == 7 && data.monthYear.matches('^\\d{4}-\\d{2}$') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSavingsGoal(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.targetAmount is number && data.targetAmount > 0 &&
+        data.currentAmount is number && data.currentAmount >= 0 &&
+        data.targetDate is string && data.targetDate.size() >= 1 && data.targetDate.size() <= 20 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 240)) &&
+        data.contributions is list && data.contributions.size() <= 100 &&
+        (data.contributions.size() == 0 || data.contributions[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidRecurring(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.amount is number && data.amount > 0 &&
+        data.billingFrequency in ['monthly', 'quarterly', 'yearly'] &&
+        data.nextRenewalDate is string && data.nextRenewalDate.size() >= 1 && data.nextRenewalDate.size() <= 20 &&
+        data.accountId is string && data.accountId.size() <= 128 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+        data.status in ['active', 'paused', 'cancelled'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidLoan(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.type in ['borrow', 'lend'] &&
+        data.personName is string && data.personName.size() >= 1 && data.personName.size() <= 80 &&
+        (!('personContact' in data) || (data.personContact is string && data.personContact.size() <= 60)) &&
+        data.originalAmount is number && data.originalAmount > 0 &&
+        data.outstandingAmount is number && data.outstandingAmount >= 0 &&
+        data.startDate is string && data.startDate.size() >= 1 && data.startDate.size() <= 20 &&
+        data.dueDate is string && data.dueDate.size() >= 1 && data.dueDate.size() <= 20 &&
+        data.description is string && data.description.size() <= 240 &&
+        data.status in ['active', 'settled', 'overdue'] &&
+        (data.outstandingAmount > 0 || data.status == 'settled') &&
+        data.repayments is list && data.repayments.size() <= 50 &&
+        (data.repayments.size() == 0 || data.repayments[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGroup(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.description is string && data.description.size() <= 240 &&
+        data.members is list && data.members.size() >= 1 && data.members.size() <= 25 &&
+        data.members[0] is map &&
+        data.expenses is list && data.expenses.size() <= 200 &&
+        (data.expenses.size() == 0 || data.expenses[0] is map) &&
+        data.settlements is list && data.settlements.size() <= 100 &&
+        (data.settlements.size() == 0 || data.settlements[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCard(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.nickname is string && data.nickname.size() >= 1 && data.nickname.size() <= 80 &&
+        data.provider is string && data.provider.size() >= 1 && data.provider.size() <= 80 &&
+        data.cardType in ['debit', 'credit', 'prepaid', 'transit', 'driving_license', 'student_id', 'national_id', 'membership', 'other'] &&
+        data.lastFour is string && data.lastFour.size() >= 1 && data.lastFour.size() <= 10 &&
+        data.cardDesign is string && data.cardDesign.size() >= 1 && data.cardDesign.size() <= 40 &&
+        data.status in ['active', 'frozen', 'expired'] &&
+        (!('linkedAccountId' in data) || (data.linkedAccountId is string && data.linkedAccountId.size() <= 128)) &&
+        (!('fullNumber' in data) || (data.fullNumber is string && data.fullNumber.size() <= 40)) &&
+        (!('holderName' in data) || (data.holderName is string && data.holderName.size() <= 80)) &&
+        (!('validTill' in data) || (data.validTill is string && data.validTill.size() <= 40)) &&
+        (!('issuingAuthority' in data) || (data.issuingAuthority is string && data.issuingAuthority.size() <= 80)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 240)) &&
+        (!('isPinned' in data) || data.isPinned is bool) &&
+        (!('transitBalance' in data) || (data.transitBalance is number && data.transitBalance >= 0)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTransitTrip(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.cardId is string && isValidId(data.cardId) &&
+        data.type in ['ride', 'recharge'] &&
+        data.mode in ['metro', 'bus', 'train', 'tram', 'shuttle'] &&
+        data.amount is number && data.amount > 0 &&
+        data.balanceAfter is number && data.balanceAfter >= 0 &&
+        (!('fromStation' in data) || (data.fromStation is string && data.fromStation.size() <= 80)) &&
+        (!('toStation' in data) || (data.toStation is string && data.toStation.size() <= 80)) &&
+        (!('routeNumber' in data) || (data.routeNumber is string && data.routeNumber.size() <= 60)) &&
+        (!('sourceAccountId' in data) || (data.sourceAccountId is string && data.sourceAccountId.size() <= 128)) &&
+        data.date is string && data.date.size() == 10 &&
+        data.time is string && data.time.size() >= 1 && data.time.size() <= 24 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 240)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidReminder(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+        data.date is string && data.date.size() >= 1 && data.date.size() <= 20 &&
+        (!('amount' in data) || (data.amount is number && data.amount >= 0)) &&
+        data.type in ['repayment', 'subscription', 'bill', 'salary', 'pocket_money', 'custom'] &&
+        data.isCompleted is bool &&
+        (!('recurrence' in data) || data.recurrence in ['none', 'monthly', 'weekly']) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidExport(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+        data.generatedAt is string && data.generatedAt.size() >= 1 && data.generatedAt.size() <= 60 &&
+        data.format in ['pdf', 'xlsx', 'csv'] &&
+        data.filterSummary is string && data.filterSummary.size() <= 160 &&
+        data.recordCount is number && data.recordCount >= 0 &&
+        data.fileSizeEstimate is string && data.fileSizeEstimate.size() <= 30 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFeedback(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+        data.category in ['ui', 'feature', 'bug', 'praise', 'other'] &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.comment is string && data.comment.size() >= 1 && data.comment.size() <= 1000 &&
+        data.submittedAt is string && data.submittedAt.size() >= 1 && data.submittedAt.size() <= 60 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // ==================== COLLECTION MATCH BLOCKS ====================
+
+    // 1. Users (Private PII strictly isolated to owner)
+    match /users/{userId} {
+      allow list: if false;
+      allow get: if isEmailVerified() && isValidId(userId) && request.auth.uid == userId;
+      allow create: if isEmailVerified() && isValidId(userId) && request.auth.uid == userId &&
+        incoming().keys().hasAll(['id', 'userId', 'name', 'email', 'occupation', 'currency', 'currencySymbol', 'isOnboarded', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'id', 'userId', 'name', 'email', 'avatarUrl', 'occupation', 'country',
+          'preferredLanguage', 'currency', 'currencySymbol', 'themePreference',
+          'isOnboarded', 'isHostelResident', 'monthlyIncomeOrAllowance',
+          'incomeFrequency', 'salaryOrAllowanceDate', 'defaultPaymentMethod',
+          'dailySpendLimit', 'lowBalanceThreshold', 'enableBudgetAlerts',
+          'enableBillReminders', 'enableRoundUpSavings', 'hideBalancesOnLaunch',
+          'appPin', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidUser(incoming(), userId);
+
+      allow update: if isEmailVerified() && isValidId(userId) && request.auth.uid == userId &&
+        incoming().userId == existing().userId &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidUser(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'email', 'avatarUrl', 'occupation', 'country',
+            'preferredLanguage', 'currency', 'currencySymbol', 'themePreference',
+            'isOnboarded', 'isHostelResident', 'monthlyIncomeOrAllowance',
+            'incomeFrequency', 'salaryOrAllowanceDate', 'defaultPaymentMethod',
+            'dailySpendLimit', 'lowBalanceThreshold', 'enableBudgetAlerts',
+            'enableBillReminders', 'enableRoundUpSavings', 'hideBalancesOnLaunch',
+            'appPin', 'updatedAt'
+          ]) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['themePreference', 'updatedAt'])
+        );
+
+      allow delete: if isEmailVerified() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    // 2. Accounts
+    match /accounts/{accountId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(accountId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(accountId) &&
+        incoming().keys().hasAll(['userId', 'name', 'bankName', 'accountType', 'balance', 'currency', 'maskedNumber', 'colorGradient', 'isDefault', 'isArchived', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'name', 'bankName', 'bankCode', 'accountType', 'balance',
+          'openingBalance', 'currency', 'maskedNumber', 'colorGradient',
+          'isDefault', 'isArchived', 'isHidden', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidAccount(incoming());
+
+      allow update: if isValidId(accountId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidAccount(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'bankName', 'bankCode', 'accountType', 'balance',
+            'openingBalance', 'currency', 'maskedNumber', 'colorGradient',
+            'isDefault', 'isArchived', 'isHidden', 'updatedAt'
+          ]) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['isHidden', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['isDefault', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(accountId) && isOwnerDoc();
+    }
+
+    // 3. Transactions (Evaluation order: Auth -> Static Validation -> Relational getAfter/existsAfter)
+    match /transactions/{transactionId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(transactionId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(transactionId) &&
+        incoming().keys().hasAll(['userId', 'accountId', 'type', 'amount', 'category', 'description', 'date', 'paymentMethod', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'accountId', 'destinationAccountId', 'type', 'amount',
+          'category', 'description', 'date', 'time', 'paymentMethod',
+          'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidTransaction(incoming()) &&
+        (
+          (existsAfter(/databases/$(database)/documents/accounts/$(incoming().accountId)) &&
+            getAfter(/databases/$(database)/documents/accounts/$(incoming().accountId)).data.userId == request.auth.uid) ||
+          (existsAfter(/databases/$(database)/documents/cards/$(incoming().accountId)) &&
+            getAfter(/databases/$(database)/documents/cards/$(incoming().accountId)).data.userId == request.auth.uid)
+        ) &&
+        (
+          incoming().type != 'transfer' ||
+          ('destinationAccountId' in incoming() &&
+            isValidId(incoming().destinationAccountId) &&
+            existsAfter(/databases/$(database)/documents/accounts/$(incoming().destinationAccountId)) &&
+            getAfter(/databases/$(database)/documents/accounts/$(incoming().destinationAccountId)).data.userId == request.auth.uid)
+        );
+
+      allow update: if isValidId(transactionId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidTransaction(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'accountId', 'destinationAccountId', 'type', 'amount',
+          'category', 'description', 'date', 'time', 'paymentMethod',
+          'notes', 'updatedAt'
+        ]) &&
+        existsAfter(/databases/$(database)/documents/accounts/$(incoming().accountId)) &&
+        getAfter(/databases/$(database)/documents/accounts/$(incoming().accountId)).data.userId == request.auth.uid;
+
+      allow delete: if isValidId(transactionId) && isOwnerDoc();
+    }
+
+    // 4. Categories
+    match /categories/{categoryId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(categoryId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(categoryId) &&
+        incoming().keys().hasAll(['userId', 'name', 'type', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'name', 'type', 'icon', 'color', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidCategory(incoming());
+
+      allow update: if isValidId(categoryId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidCategory(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'icon', 'color', 'updatedAt']);
+
+      allow delete: if isValidId(categoryId) && isOwnerDoc();
+    }
+
+    // 5. Budgets
+    match /budgets/{budgetId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(budgetId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(budgetId) &&
+        incoming().keys().hasAll(['userId', 'category', 'limitAmount', 'period', 'monthYear', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'category', 'limitAmount', 'period', 'monthYear', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidBudget(incoming());
+
+      allow update: if isValidId(budgetId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidBudget(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['category', 'limitAmount', 'period', 'monthYear', 'updatedAt']);
+
+      allow delete: if isValidId(budgetId) && isOwnerDoc();
+    }
+
+    // 6. Savings Goals
+    match /savings_goals/{goalId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(goalId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(goalId) &&
+        incoming().keys().hasAll(['userId', 'name', 'targetAmount', 'currentAmount', 'targetDate', 'category', 'contributions', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'name', 'targetAmount', 'currentAmount', 'targetDate', 'category', 'description', 'contributions', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidSavingsGoal(incoming());
+
+      allow update: if isValidId(goalId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidSavingsGoal(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['currentAmount', 'contributions', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'targetAmount', 'targetDate', 'category', 'description', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(goalId) && isOwnerDoc();
+    }
+
+    // 7. Recurring Transactions / Subscriptions
+    match /recurring_transactions/{recurringId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(recurringId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(recurringId) &&
+        incoming().keys().hasAll(['userId', 'name', 'amount', 'billingFrequency', 'nextRenewalDate', 'accountId', 'category', 'status', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'name', 'amount', 'billingFrequency', 'nextRenewalDate', 'accountId', 'category', 'status', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidRecurring(incoming());
+
+      allow update: if isValidId(recurringId) && isOwnerDoc() &&
+        existing().status != 'cancelled' &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidRecurring(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'amount', 'billingFrequency', 'nextRenewalDate', 'accountId', 'category', 'status', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(recurringId) && isOwnerDoc();
+    }
+
+    // 8. Loans (Borrowing & Lending)
+    match /loans/{loanId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(loanId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(loanId) &&
+        incoming().keys().hasAll(['userId', 'type', 'personName', 'originalAmount', 'outstandingAmount', 'startDate', 'dueDate', 'description', 'status', 'repayments', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'type', 'personName', 'personContact', 'originalAmount', 'outstandingAmount', 'startDate', 'dueDate', 'description', 'status', 'repayments', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidLoan(incoming());
+
+      allow update: if isValidId(loanId) && isOwnerDoc() &&
+        existing().status != 'settled' &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidLoan(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['outstandingAmount', 'status', 'repayments', 'updatedAt']);
+
+      allow delete: if isValidId(loanId) && isOwnerDoc();
+    }
+
+    // 9. Groups
+    match /groups/{groupId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(groupId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(groupId) &&
+        incoming().keys().hasAll(['userId', 'name', 'description', 'members', 'expenses', 'settlements', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'name', 'description', 'members', 'expenses', 'settlements', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidGroup(incoming());
+
+      allow update: if isValidId(groupId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidGroup(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['expenses', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['settlements', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'members', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(groupId) && isOwnerDoc();
+    }
+
+    // 10. Virtual Cards & Transit Cards
+    match /cards/{cardId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(cardId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(cardId) &&
+        incoming().keys().hasAll(['userId', 'nickname', 'provider', 'cardType', 'lastFour', 'cardDesign', 'status', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'nickname', 'provider', 'cardType', 'linkedAccountId',
+          'lastFour', 'fullNumber', 'holderName', 'validTill',
+          'issuingAuthority', 'cardDesign', 'status', 'notes',
+          'isPinned', 'transitBalance', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidCard(incoming());
+
+      allow update: if isValidId(cardId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidCard(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['transitBalance', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['nickname', 'provider', 'holderName', 'status', 'isPinned', 'notes', 'validTill', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(cardId) && isOwnerDoc();
+    }
+
+    // 11. Transit Trips
+    match /transit_trips/{tripId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(tripId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(tripId) &&
+        incoming().keys().hasAll(['userId', 'cardId', 'type', 'mode', 'amount', 'balanceAfter', 'date', 'time', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'cardId', 'type', 'mode', 'amount', 'balanceAfter',
+          'fromStation', 'toStation', 'routeNumber', 'sourceAccountId',
+          'date', 'time', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidTransitTrip(incoming()) &&
+        existsAfter(/databases/$(database)/documents/cards/$(incoming().cardId)) &&
+        getAfter(/databases/$(database)/documents/cards/$(incoming().cardId)).data.userId == request.auth.uid;
+
+      allow update: if false;
+      allow delete: if isValidId(tripId) && isOwnerDoc();
+    }
+
+    // 12. Reminders
+    match /reminders/{reminderId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(reminderId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(reminderId) &&
+        incoming().keys().hasAll(['userId', 'title', 'date', 'type', 'isCompleted', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'title', 'date', 'amount', 'type', 'isCompleted', 'recurrence', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidReminder(incoming());
+
+      allow update: if isValidId(reminderId) && isOwnerDoc() &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isValidReminder(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['isCompleted', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'date', 'amount', 'type', 'recurrence', 'updatedAt'])
+        );
+
+      allow delete: if isValidId(reminderId) && isOwnerDoc();
+    }
+
+    // 13. Export History
+    match /exports/{exportId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(exportId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(exportId) &&
+        incoming().keys().hasAll(['userId', 'title', 'generatedAt', 'format', 'filterSummary', 'recordCount', 'fileSizeEstimate', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'title', 'generatedAt', 'format', 'filterSummary', 'recordCount', 'fileSizeEstimate', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidExport(incoming());
+
+      allow update: if false;
+      allow delete: if isValidId(exportId) && isOwnerDoc();
+    }
+
+    // 14. Feedback
+    match /feedback/{feedbackId} {
+      allow list: if isSignedIn() && isEmailVerified() && resource.data.userId == request.auth.uid;
+      allow get: if isValidId(feedbackId) && isOwnerDoc();
+      allow create: if isEmailVerified() && isValidId(feedbackId) &&
+        incoming().keys().hasAll(['userId', 'category', 'rating', 'comment', 'submittedAt', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'category', 'rating', 'comment', 'submittedAt', 'createdAt', 'updatedAt']) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isValidFeedback(incoming());
+
+      allow update: if false;
+      allow delete: if isValidId(feedbackId) && isOwnerDoc();
+    }
+  }
+}

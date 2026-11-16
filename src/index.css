@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Mixed Royal Ivory / Light Theme */
+    --bg-primary: #F3F5FC;
+    --bg-secondary: #FFFFFF;
+    --bg-card: rgba(255, 255, 255, 0.84);
+    --bg-elevated: #ECEFF9;
+    --text-primary: #0F132A;
+    --text-secondary: #5B6584;
+    --accent-gold: #4F46E5;
+    --accent-gold-hover: #4338CA;
+    --accent-royal: #6D28D9;
+    --border-color: rgba(99, 102, 241, 0.14);
+    --border-glass: rgba(255, 255, 255, 0.78);
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --card-shadow: 0 14px 36px -8px rgba(49, 46, 129, 0.10), 0 4px 12px -2px rgba(15, 19, 42, 0.05);
+  }
+
+  .dark {
+    /* Mixed Royal Obsidian / Dark Theme */
+    --bg-primary: #060710;
+    --bg-secondary: #0B0E1D;
+    --bg-card: rgba(16, 20, 42, 0.72);
+    --bg-elevated: rgba(24, 30, 62, 0.85);
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --accent-gold: #818CF8;
+    --accent-gold-hover: #A5B4FC;
+    --accent-royal: #8B5CF6;
+    --border-color: rgba(139, 92, 246, 0.18);
+    --border-glass: rgba(255, 255, 255, 0.12);
+    --success: #34D399;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --card-shadow: 0 18px 46px 0 rgba(0, 0, 0, 0.75), 0 0 24px -6px rgba(99, 102, 241, 0.18);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+  }
+
+  /* Exclusive Luxury Stylish Wordmark Font ONLY for "FINORA" */
+  .font-finora {
+    font-family: 'Cinzel', Georgia, serif;
+    letter-spacing: 0.12em;
+  }
+
+  /* GPay / UPI Payment-style modern, clean tabular numbers */
+  .tabular-nums {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "cv05" 1;
+    letter-spacing: -0.015em;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Realistic Ambient Background & Glow Keyframes */
+@keyframes ambientDrift {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(28px, -22px) scale(1.06); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.52; }
+}
+
+@keyframes fadeInSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ambient-orb {
+  animation: ambientDrift 18s ease-in-out infinite alternate;
+}
+
+.ambient-pulse {
+  animation: pulseSubtle 8s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fadeInSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+/* Mixed Royal Gradient Text Utility */
+.royal-gradient-text {
+  background: linear-gradient(135deg, #6366F1 0%, #A855F7 48%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.45);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

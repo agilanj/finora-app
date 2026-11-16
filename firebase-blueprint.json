@@ -1,0 +1,343 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated user profile, workspace onboarding status, currency settings, and financial guardrails.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "minLength": 3, "maxLength": 200 },
+        "avatarUrl": { "type": "string", "maxLength": 150000 },
+        "occupation": {
+          "type": "string",
+          "enum": ["college_student", "school_student", "hostel_student", "working_professional", "freelancer", "business_owner", "self_employed", "other"]
+        },
+        "country": { "type": "string", "maxLength": 80 },
+        "preferredLanguage": { "type": "string", "maxLength": 50 },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 10 },
+        "currencySymbol": { "type": "string", "minLength": 1, "maxLength": 8 },
+        "themePreference": { "type": "string", "enum": ["dark", "light", "system"] },
+        "isOnboarded": { "type": "boolean" },
+        "isHostelResident": { "type": "boolean" },
+        "monthlyIncomeOrAllowance": { "type": "number" },
+        "incomeFrequency": { "type": "string", "enum": ["monthly", "weekly", "irregular"] },
+        "salaryOrAllowanceDate": { "type": "number" },
+        "defaultPaymentMethod": { "type": "string", "maxLength": 40 },
+        "dailySpendLimit": { "type": "number" },
+        "lowBalanceThreshold": { "type": "number" },
+        "enableBudgetAlerts": { "type": "boolean" },
+        "enableBillReminders": { "type": "boolean" },
+        "enableRoundUpSavings": { "type": "boolean" },
+        "hideBalancesOnLaunch": { "type": "boolean" },
+        "appPin": { "type": "string", "maxLength": 4 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "email", "occupation", "currency", "currencySymbol", "isOnboarded", "createdAt", "updatedAt"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "User bank account, cash wallet, or UPI-linked liquidity account.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "bankName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "bankCode": { "type": "string", "maxLength": 20 },
+        "accountType": { "type": "string", "enum": ["savings", "current", "salary", "cash", "upi", "other"] },
+        "balance": { "type": "number" },
+        "openingBalance": { "type": "number" },
+        "currency": { "type": "string", "minLength": 3, "maxLength": 10 },
+        "maskedNumber": { "type": "string", "maxLength": 30 },
+        "colorGradient": { "type": "string", "maxLength": 120 },
+        "isDefault": { "type": "boolean" },
+        "isArchived": { "type": "boolean" },
+        "isHidden": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "bankName", "accountType", "balance", "currency", "maskedNumber", "colorGradient", "isDefault", "isArchived", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial ledger record for income, expense, or internal transfer.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "accountId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "destinationAccountId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["income", "expense", "transfer"] },
+        "amount": { "type": "number" },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "date": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "time": { "type": "string", "maxLength": 24 },
+        "paymentMethod": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "notes": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "accountId", "type", "amount", "category", "description", "date", "paymentMethod", "createdAt", "updatedAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "User income or expense category configuration.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "type": { "type": "string", "enum": ["expense", "income"] },
+        "icon": { "type": "string", "maxLength": 40 },
+        "color": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "type", "createdAt", "updatedAt"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly or weekly category spending limit.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "category": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "limitAmount": { "type": "number" },
+        "period": { "type": "string", "enum": ["monthly", "weekly"] },
+        "monthYear": { "type": "string", "minLength": 7, "maxLength": 7, "pattern": "^\\d{4}-\\d{2}$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "category", "limitAmount", "period", "monthYear", "createdAt", "updatedAt"]
+    },
+    "SavingsGoal": {
+      "title": "SavingsGoal",
+      "description": "User savings target and contribution log.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "targetDate": { "type": "string", "maxLength": 20 },
+        "category": { "type": "string", "maxLength": 60 },
+        "description": { "type": "string", "maxLength": 240 },
+        "contributions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "targetAmount", "currentAmount", "targetDate", "category", "contributions", "createdAt", "updatedAt"]
+    },
+    "RecurringTransaction": {
+      "title": "RecurringTransaction",
+      "description": "Recurring subscription or scheduled payment.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "amount": { "type": "number" },
+        "billingFrequency": { "type": "string", "enum": ["monthly", "quarterly", "yearly"] },
+        "nextRenewalDate": { "type": "string", "maxLength": 20 },
+        "accountId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "maxLength": 60 },
+        "status": { "type": "string", "enum": ["active", "paused", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "amount", "billingFrequency", "nextRenewalDate", "accountId", "category", "status", "createdAt", "updatedAt"]
+    },
+    "LoanRecord": {
+      "title": "LoanRecord",
+      "description": "Personal borrowing and lending dues with friends.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "type": { "type": "string", "enum": ["borrow", "lend"] },
+        "personName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "personContact": { "type": "string", "maxLength": 60 },
+        "originalAmount": { "type": "number" },
+        "outstandingAmount": { "type": "number" },
+        "startDate": { "type": "string", "maxLength": 20 },
+        "dueDate": { "type": "string", "maxLength": 20 },
+        "description": { "type": "string", "maxLength": 240 },
+        "status": { "type": "string", "enum": ["active", "settled", "overdue"] },
+        "repayments": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "personName", "originalAmount", "outstandingAmount", "startDate", "dueDate", "description", "status", "repayments", "createdAt", "updatedAt"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Shared expense group for hostel roommates or friends.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 240 },
+        "members": { "type": "array" },
+        "expenses": { "type": "array" },
+        "settlements": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "description", "members", "expenses", "settlements", "createdAt", "updatedAt"]
+    },
+    "VirtualCard": {
+      "title": "VirtualCard",
+      "description": "Transit smart pass or wallet card stored in user carousel.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "nickname": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "cardType": { "type": "string", "enum": ["debit", "credit", "prepaid", "transit", "driving_license", "student_id", "national_id", "membership", "other"] },
+        "linkedAccountId": { "type": "string", "maxLength": 128 },
+        "lastFour": { "type": "string", "maxLength": 10 },
+        "fullNumber": { "type": "string", "maxLength": 40 },
+        "holderName": { "type": "string", "maxLength": 80 },
+        "validTill": { "type": "string", "maxLength": 40 },
+        "issuingAuthority": { "type": "string", "maxLength": 80 },
+        "cardDesign": { "type": "string", "maxLength": 40 },
+        "status": { "type": "string", "enum": ["active", "frozen", "expired"] },
+        "notes": { "type": "string", "maxLength": 240 },
+        "isPinned": { "type": "boolean" },
+        "transitBalance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "nickname", "provider", "cardType", "lastFour", "cardDesign", "status", "createdAt", "updatedAt"]
+    },
+    "TransitTripLog": {
+      "title": "TransitTripLog",
+      "description": "Travel card ride deduction or recharge history item.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "cardId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "type": { "type": "string", "enum": ["ride", "recharge"] },
+        "mode": { "type": "string", "enum": ["metro", "bus", "train", "tram", "shuttle"] },
+        "amount": { "type": "number" },
+        "balanceAfter": { "type": "number" },
+        "fromStation": { "type": "string", "maxLength": 80 },
+        "toStation": { "type": "string", "maxLength": 80 },
+        "routeNumber": { "type": "string", "maxLength": 60 },
+        "sourceAccountId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "minLength": 10, "maxLength": 10 },
+        "time": { "type": "string", "maxLength": 24 },
+        "notes": { "type": "string", "maxLength": 240 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "cardId", "type", "mode", "amount", "balanceAfter", "date", "time", "createdAt", "updatedAt"]
+    },
+    "FinancialReminder": {
+      "title": "FinancialReminder",
+      "description": "Financial bill, loan, or payday reminder.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20 },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["repayment", "subscription", "bill", "salary", "pocket_money", "custom"] },
+        "isCompleted": { "type": "boolean" },
+        "recurrence": { "type": "string", "enum": ["none", "monthly", "weekly"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "date", "type", "isCompleted", "createdAt", "updatedAt"]
+    },
+    "ExportHistoryItem": {
+      "title": "ExportHistoryItem",
+      "description": "Metadata log of generated PDF/Excel/CSV statements.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "generatedAt": { "type": "string", "maxLength": 60 },
+        "format": { "type": "string", "enum": ["pdf", "xlsx", "csv"] },
+        "filterSummary": { "type": "string", "maxLength": 160 },
+        "recordCount": { "type": "number" },
+        "fileSizeEstimate": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "generatedAt", "format", "filterSummary", "recordCount", "fileSizeEstimate", "createdAt", "updatedAt"]
+    },
+    "FeedbackItem": {
+      "title": "FeedbackItem",
+      "description": "User feedback submission.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "category": { "type": "string", "enum": ["ui", "feature", "bug", "praise", "other"] },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "submittedAt": { "type": "string", "maxLength": 60 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "category", "rating", "comment", "submittedAt", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile, onboarding state, and personal finance settings (owner-only read/write)."
+    },
+    "/accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/Account" },
+      "description": "User bank accounts and cash wallets isolated by userId."
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Income, expense, and internal transfer transactions isolated by userId."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "User custom and default financial categories isolated by userId."
+    },
+    "/budgets/{budgetId}": {
+      "schema": { "$ref": "#/entities/Budget" },
+      "description": "User category spending limits isolated by userId."
+    },
+    "/savings_goals/{goalId}": {
+      "schema": { "$ref": "#/entities/SavingsGoal" },
+      "description": "User savings goals and contribution history isolated by userId."
+    },
+    "/recurring_transactions/{recurringId}": {
+      "schema": { "$ref": "#/entities/RecurringTransaction" },
+      "description": "User subscriptions and recurring payments isolated by userId."
+    },
+    "/loans/{loanId}": {
+      "schema": { "$ref": "#/entities/LoanRecord" },
+      "description": "User borrowing and lending records isolated by userId."
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/Group" },
+      "description": "Shared expense groups isolated by userId."
+    },
+    "/cards/{cardId}": {
+      "schema": { "$ref": "#/entities/VirtualCard" },
+      "description": "User transit smart passes and cards isolated by userId."
+    },
+    "/transit_trips/{tripId}": {
+      "schema": { "$ref": "#/entities/TransitTripLog" },
+      "description": "Transit card ride and recharge logs isolated by userId."
+    },
+    "/reminders/{reminderId}": {
+      "schema": { "$ref": "#/entities/FinancialReminder" },
+      "description": "User financial reminders isolated by userId."
+    },
+    "/exports/{exportId}": {
+      "schema": { "$ref": "#/entities/ExportHistoryItem" },
+      "description": "User financial statement export logs isolated by userId."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/FeedbackItem" },
+      "description": "User-submitted feedback isolated by userId."
+    }
+  }
+}
