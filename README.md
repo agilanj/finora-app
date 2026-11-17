@@ -1,6 +1,6 @@
 # FINORA – Your Money. Your Control. 💰
 
-\<p align="center">
+<!-- \<p align="center">
 &#x20; \<img src="public/assets/aistudio/finora_logo_02e42f38.png" alt="FINORA Logo" width="180" />
 \</p>
 
@@ -8,7 +8,7 @@
 
 \<p align="center">   A modern, intelligent and responsive personal finance management platform designed to help you track expenses, manage multiple bank accounts, organize your finances and take control of your money. \</p>
 
-\<p align="center">   \<a href="[https://finoraa-money.vercel.app/](https://finoraa-money.vercel.app/)">\<strong>🌐 Live Demo\</strong>\</a>   ·   \<a href="#-features">\<strong>Explore Features\</strong>\</a>   ·   \<a href="#-installation-and-setup">\<strong>Installation\</strong>\</a> \</p>
+\<p align="center">   \<a href="[https://finoraa-money.vercel.app/](https://finoraa-money.vercel.app/)">\<strong>🌐 Live Demo\</strong>\</a>   ·   \<a href="#-features">\<strong>Explore Features\</strong>\</a>   ·   \<a href="#-installation-and-setup">\<strong>Installation\</strong>\</a> \</p> -->
 
 
 <p align="center">
