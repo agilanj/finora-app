@@ -23,7 +23,7 @@
 
 <p align="center">
   <a href="https://finoraa-money.vercel.app/">
-    <strong>🌐 Live Demo</strong>
+    <strong>🌐 Live site</strong>
   </a>
   &nbsp;·&nbsp;
   <a href="#-features">
@@ -489,7 +489,7 @@ Potential areas for future development:
 
 **Developed by Agilan J**
 
-B.E. Cybersecurity Student | Web Developer | Technology Enthusiast
+Student | Web Developer | Technology Enthusiast
 
 - GitHub: [https://github.com/agilanj](https://github.com/agilanj)
 - Portfolio: [https://agilan-portfolio-nine.vercel.app/](https://agilan-portfolio-nine.vercel.app/)
