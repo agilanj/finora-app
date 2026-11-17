@@ -501,6 +501,8 @@ B.E. Cybersecurity Student | Web Developer | Technology Enthusiast
 
 This project is currently available for learning and portfolio demonstration.
 
+All rights reserved © 2026 Agilan J.
+
 ---
 
 <!-- \<p align="center">
@@ -510,6 +512,12 @@ This project is currently available for learning and portfolio demonstration.
 \</p> -->
 
 <p align="center">
+  <img src="public/assets/aistudio/finora_logo_02e42f38.png"
+       alt="FINORA Logo"
+       width="28"
+       height="28"
+       align="center" />
+  &nbsp;
   <strong>FINORA – Your Money. Your Control.</strong>
   <br />
   Built to make everyday financial management simpler.
