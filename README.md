@@ -492,7 +492,8 @@ Potential areas for future development:
 B.E. Cybersecurity Student | Web Developer | Technology Enthusiast
 
 - GitHub: [https://github.com/agilanj](https://github.com/agilanj)
-- Portfolio: [https://github.com/agilanj/agilan-portfolio](https://github.com/agilanj/agilan-portfolio)
+- Portfolio: [https://agilan-portfolio-nine.vercel.app/](https://agilan-portfolio-nine.vercel.app/)
+- LinkedIn: [https://linkedin.com/in/agilanj](https://linkedin.com/in/agilanj)
 
 ---
 
@@ -500,12 +501,16 @@ B.E. Cybersecurity Student | Web Developer | Technology Enthusiast
 
 This project is currently available for learning and portfolio demonstration.
 
-Add an appropriate open-source licence before permitting reuse or redistribution.
-
 ---
 
-\<p align="center">
+<!-- \<p align="center">
 &#x20; \<strong>FINORA – Your Money. Your Control.\</strong>
 &#x20; \<br />
 &#x20; Built to make everyday financial management simpler.
-\</p>
+\</p> -->
+
+<p align="center">
+  <strong>FINORA – Your Money. Your Control.</strong>
+  <br />
+  Built to make everyday financial management simpler.
+</p>
