@@ -1,4 +1,4 @@
-# FINORA – Your Money. Your Control. 💰
+# FINORA – Your Money. Your Control.
 
 <!-- \<p align="center">
 &#x20; \<img src="public/assets/aistudio/finora_logo_02e42f38.png" alt="FINORA Logo" width="180" />
